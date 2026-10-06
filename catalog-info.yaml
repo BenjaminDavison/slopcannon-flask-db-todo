@@ -19,7 +19,10 @@ metadata:
     github.com/project-slug: BenjaminDavison/slopcannon-flask-db-todo
     slopcloud.io/image: ghcr.io/benjamindavison/slopcannon-flask-db-todo-api:latest
     slopcloud.io/ingress-url: http://todo-api.localhost:8088
+    slopcloud.io/database: todo-db
 spec:
   type: webapp
   lifecycle: experimental
   owner: group:default/guests
+  dependsOn:
+    - resource:default/todo-db
