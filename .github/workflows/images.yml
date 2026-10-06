@@ -1,0 +1,57 @@
+name: Build and publish images
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: buildpacks/github-actions/setup-pack@v5
+      - id: image
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+      - name: Build and publish frontend
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL || 'http://todo-api.localhost:8088' }}
+        run: |
+          pack build "${{ steps.image.outputs.name }}-web:${GITHUB_SHA}" \
+            --path frontend \
+            --platform linux/arm64 \
+            --publish \
+            --tag "${{ steps.image.outputs.name }}-web:latest" \
+            --env "VITE_API_URL=${VITE_API_URL}"
+
+  api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: buildpacks/github-actions/setup-pack@v5
+      - id: image
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+      - name: Build and publish API
+        run: |
+          pack build "${{ steps.image.outputs.name }}-api:${GITHUB_SHA}" \
+            --path backend \
+            --platform linux/arm64 \
+            --publish \
+            --tag "${{ steps.image.outputs.name }}-api:latest"
